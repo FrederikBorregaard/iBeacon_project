@@ -1,7 +1,7 @@
 /*
  *  @Author:          Jakub Witowski 
- *  @Creation date:   06.02.2018 
- *  @Project name:    WebSocketServer
+ *  @Creation date:   todo 
+ *  @Project name:    iBeacon
  * 
  * 
  *  Functionality:
@@ -19,20 +19,11 @@
  *      - Reboot after configurable timeout when cannot connect to the AP
  *      - Reboot after configurable timeout when lost WiFi connection and cannot restore it
  *      
- *    - Implemented WebSocketSerwer
- *      - Configurable PORT and IP nr: PORT @@81
- *      - Receiving JSON package: JSON input buffer
- *      - Supported commands in JSON format:
- *        - "{"LED1" : 1}"
- *        - "{"LED1" : 0}"
- *        
- *        
+ *       
  *    Configurable parameters:
  *      - Serial Baud Rate: 115200
  *      - Establishing connection timeout: 16000ms
  *      - Trying reconnect timeout: 20000ms
- *      - WebSocketServer Port: 81
- *      - JSON input buffer size: 200bytes
  */
  
 /* ==================================================================== */
@@ -40,12 +31,12 @@
 /* ==================================================================== */
 #include <Arduino.h>
 
-#include "web_socket_event.h"
 #include "serial_event.h"
 #include "wifi_manager.h"
 #include "nvm_manager.h"
 #include "gpio_manager.h"
 #include "tmr_config.h"
+#include "server_manager.h"
 
 /* ==================================================================== */
 /* ============================ constants ============================= */
@@ -127,7 +118,8 @@ void loop()
       Stop_reconnect_tmr();
       wifi.WiFi_clear_connection_lost_flag();
     }
-    webSocketLoop();
+    /* Handle server requests */
+    server_handle_client();
   }
   serial_e.Serial_RxEvent();
 }

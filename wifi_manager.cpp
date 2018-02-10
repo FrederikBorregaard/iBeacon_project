@@ -1,6 +1,6 @@
 #include "wifi_manager.h"
-#include "web_socket_event.h"
 #include "nvm_manager.h"
+#include "server_manager.h"
 
 /* SSID and Password of the AP */
 String ssid;
@@ -36,8 +36,8 @@ void WiFi_Manager::WiFi_Connect()
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
 
-  //Serial.printf("WIFI -> SSID: %s\n", ssid.c_str());
-  //Serial.printf("WIFI -> PASSWORD: %s\n", pass.c_str());
+  Serial.printf("WIFI -> SSID: %s\n", ssid.c_str());
+  Serial.printf("WIFI -> PASSWORD: %s\n", pass.c_str());
   
   WiFi.begin(ssid.c_str(), pass.c_str());
   Serial.println("WIFI -> Connecting");
@@ -69,8 +69,8 @@ void WiFi_Manager::WiFi_Connect()
     Serial.printf("WIFI -> IP address: ");
     Serial.println(WiFi.localIP());
 
-    /* Initialize the WebSocket */
-    webSocketInit();
+    /* Start server */
+    ServerInit();
   }
 }
 
