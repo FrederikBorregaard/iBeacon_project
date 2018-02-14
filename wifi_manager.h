@@ -19,7 +19,6 @@ class WiFi_Manager
     void WiFi_set_connection_lost_flag();
     void WiFi_clear_connection_lost_flag();
     bool WiFi_get_connection_lost_flag();
-  
 };
 
 #endif /* _WIFI_MANAGER_H_ */

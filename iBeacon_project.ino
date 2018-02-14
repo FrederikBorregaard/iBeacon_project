@@ -54,6 +54,7 @@ Nvm_Manager eeprom;
 WiFi_Manager wifi;
 Gpio_Manager gpio;
 Serial_Event serial_e;
+Server_Manager server;
 
 /* ==================================================================== */
 /* ==================== function prototypes =========================== */
@@ -119,7 +120,7 @@ void loop()
       wifi.WiFi_clear_connection_lost_flag();
     }
     /* Handle server requests */
-    server_handle_client();
+    server.Server_HandleClient();
   }
   serial_e.Serial_RxEvent();
 }

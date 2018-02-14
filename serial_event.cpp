@@ -25,6 +25,9 @@ Serial_Event::Serial_Event()
  */
 void Serial_Event::Serial_ParseString(String s)
 { 
+  /* Status value of EEPROM write operation */
+  bool eep_write_stat = EEPROM_WRITE_ERROR;
+  
   switch(login_state)
   {
     case credentials_change_request:
@@ -38,13 +41,20 @@ void Serial_Event::Serial_ParseString(String s)
 
     case credentials_ssid_stored:
     {
-      
       new_password = s;
       login_state = credentials_change_completed;
       
       /* Write new credentials to the NvM */
-      eep.Nvm_CredentialsWrite(new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
-      Serial.println("LOGIN -> Credentials CHANGED");
+      eep_write_stat = eep.Nvm_CredentialsWrite(new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
+      
+      if(EEPROM_WRITE_ERROR != eep_write_stat)
+      {
+        Serial.println("LOGIN -> Credentials CHANGED");
+      }
+      else
+      {
+        Serial.println("LOGIN -> Credentials NOT CHANGED");
+      }
 
       /* Start reconnect timer */
       Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);

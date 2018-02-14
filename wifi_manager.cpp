@@ -9,6 +9,9 @@ String pass;
 /* NvM handler */
 Nvm_Manager eepr;
 
+/* Web server handler */
+Server_Manager srvr;
+
 /* WiFi establishing connection related flag */
 bool establish_failed = false;
 
@@ -70,7 +73,7 @@ void WiFi_Manager::WiFi_Connect()
     Serial.println(WiFi.localIP());
 
     /* Start server */
-    ServerInit();
+    srvr.Server_Init();
   }
 }
 

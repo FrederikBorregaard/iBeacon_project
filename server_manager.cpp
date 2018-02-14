@@ -1,26 +1,108 @@
 #include "server_manager.h"
 
-ESP8266WebServer server(80);
+/* Create WebServer instance */
+ESP8266WebServer WServer(80);
 
-typedef enum Gpio_ID_Tag
-{
-  Gpio_ID_D4 = 0,
-  Gpio_ID_D5,
-  Gpio_Last_ID
-  
-}Gpio_ID_T;
+/* Initialize the GpioState tab */
+String  GpioState[GPIO_REMOTE_USED] = {"OFF", "OFF"};
 
-String  GpioState[GPIO_REMOTE_USED] = {"OFF","OFF"};
-
+/* Dummy values */
 float temperature = 0 ;
 float humidity = 0 ;
 float pressure = 0;
 uint8_t light_level = 0;
 
-void updateGPIO(Gpio_ID_T gpio_id, String gpio_state);
+inline void Server_HandleRequest();
 
 
-String getPage()
+/* Server_Init()
+    - This functions initializes the server
+    - It should be called when the WiFi connection is established
+*/
+void Server_Manager::Server_Init()
+{
+  temperature = 22;
+  humidity = 52;
+  pressure = 1002;
+  light_level = 69;
+  
+  WServer.on("/", Server_HandleRequest);
+  WServer.begin();
+  
+  Serial.println("SERVER -> Started");
+}
+
+
+/* Server_HandleClient()
+    - This functions handles Clients requests (webbrowsers requests)
+    - This function should be called periodically in the loop
+*/
+void Server_Manager::Server_HandleClient()
+{
+  WServer.handleClient();
+}
+
+
+/* Server_HandleRequest()
+    - This functions handles the Server's requests
+*/
+void Server_HandleRequest()
+{
+  Server_Manager s;
+  if(WServer.hasArg("D4")) 
+  {
+    s.Server_UpdateGPIO(Gpio_ID_D4, WServer.arg("D4")); 
+  } 
+  
+  else if(WServer.hasArg("D5")) 
+  {
+    s.Server_UpdateGPIO(Gpio_ID_D5, WServer.arg("D5")); 
+  } 
+  
+  else
+  {
+    WServer.send(200, "text/html", s.Server_GetPage());
+  }  
+}
+
+
+/* Server_UpdateGPIO()
+    - This functions updates the GPIO information in website's source code
+*/
+void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
+{
+  Serial.print("GPIO -> "); 
+  Serial.print(GpioPin[gpio_id]); 
+  Serial.print(": "); 
+  Serial.println(gpio_state);
+  
+  if(gpio_state == "1") 
+  {
+    digitalWrite(GpioPin[gpio_id], HIGH);
+
+    /* Change span's value */
+    GpioState[gpio_id] = "On";
+    WServer.send(200, "text/html", Server_GetPage());
+  } 
+  
+  else if(gpio_state == "0")
+  {
+    digitalWrite(GpioPin[gpio_id], LOW);
+
+    /* Change span's value */
+    GpioState[gpio_id] = "Off";
+    WServer.send(200, "text/html", Server_GetPage());
+  } 
+  else 
+  {
+    Serial.println("GPIO -> Unknown request");
+  }  
+}
+
+/* Server_GetPage()
+    - This functions prints the website on the server
+*/
+String Server_Manager::Server_GetPage()
 {
   String  webpage = "";
   
@@ -178,76 +260,5 @@ String getPage()
   webpage += "</body></html>";
   
   return webpage;
-}
-
-
-void handleRoot()
-{ 
-  if(server.hasArg("D4")) 
-  {
-    updateGPIO(Gpio_ID_D4, server.arg("D4")); 
-  } 
-  
-  else if(server.hasArg("D5")) 
-  {
-    updateGPIO(Gpio_ID_D5, server.arg("D5")); 
-  } 
-  
-  else
-  {
-    server.send(200, "text/html", getPage());
-  }  
-}
-
-
-void updateGPIO(Gpio_ID_T gpio_id, String gpio_state) 
-{
-  Serial.print("GPIO -> "); 
-  Serial.print(GpioPin[gpio_id]); 
-  Serial.print(": "); 
-  Serial.println(gpio_state);
-  
-  if(gpio_state == "1") 
-  {
-    digitalWrite(GpioPin[gpio_id], HIGH);
-
-    /* Change span's value */
-    GpioState[gpio_id] = "On";
-    server.send(200, "text/html", getPage());
-  } 
-  
-  else if(gpio_state == "0")
-  {
-    digitalWrite(GpioPin[gpio_id], LOW);
-
-    /* Change span's value */
-    GpioState[gpio_id] = "Off";
-    server.send(200, "text/html", getPage());
-  } 
-  else 
-  {
-    Serial.println("GPIO -> Unknown request");
-  }  
-}
-
-void ServerInit()
-{
-  temperature = 22;
-  humidity = 52;
-  pressure = 1002;
-  light_level = 69;
-  
-  
-
-  server.on ( "/", handleRoot );
-
-  server.begin();
-  Serial.println("SERVER -> Started");
-}
-
-
-void server_handle_client()
-{
-  server.handleClient();
 }
 
