@@ -1,4 +1,27 @@
+/*
+ *  @Author:          Jakub Witowski
+ *  @Project name:    iBeacon
+ *  @File name:       serial_manager.cpp
+ */
+ 
+/* ==================================================================== */
+/* ========================== include files =========================== */
+/* ==================================================================== */
 #include "server_manager.h"
+
+/* ==================================================================== */
+/* ======================== global variables ========================== */
+/* ==================================================================== */
+
+/* Dummy values */
+float temperature = 22.3 ;
+float humidity = 45;
+float pressure = 1002.5;
+uint8_t light_level = 69;
+
+/* Username and Password of the Website access */
+String user_username;
+String user_password;
 
 /* Create WebServer instance */
 ESP8266WebServer WServer(80);
@@ -6,69 +29,178 @@ ESP8266WebServer WServer(80);
 /* Initialize the GpioState tab */
 String  GpioState[GPIO_REMOTE_USED] = {"OFF", "OFF"};
 
-/* Dummy values */
-float temperature = 0 ;
-float humidity = 0 ;
-float pressure = 0;
-uint8_t light_level = 0;
+/* NvM handler */
+Nvm_Manager e;
 
-inline void Server_HandleRequest();
+/* ==================================================================== */
+/* ================== local function declarations ===================== */
+/* ==================================================================== */
+inline void handleControlData();
+inline void handleLogin();
 
+/* ==================================================================== */
+/* ================== local function definitions  ===================== */
+/* ==================================================================== */
 
-/* Server_Init()
-    - This functions initializes the server
-    - It should be called when the WiFi connection is established
-*/
-void Server_Manager::Server_Init()
+/* 
+ *  handleControlData()
+ *    - This functions handles the Server's requests related to the control website
+ */
+void handleControlData()
 {
-  temperature = 22;
-  humidity = 52;
-  pressure = 1002;
-  light_level = 69;
+  Server_Manager s;
+  String header;
+
+  if(!s.Server_IsAuthentified())
+  { 
+    WServer.sendHeader("Location","/login");
+    WServer.sendHeader("Cache-Control","no-cache");
+    WServer.send(301);
+  }
+  else
+  {
+    /* Server authenticate passed ! */
+    if(WServer.hasArg("D4")) 
+    {
+      s.Server_UpdateGPIO(Gpio_ID_D4, WServer.arg("D4")); 
+    } 
+    
+    else if(WServer.hasArg("D5")) 
+    {
+      s.Server_UpdateGPIO(Gpio_ID_D5, WServer.arg("D5")); 
+    } 
   
-  WServer.on("/", Server_HandleRequest);
-  WServer.begin();
-  
-  Serial.println("SERVER -> Started");
+    else
+    {
+      WServer.send(200, "text/html", s.Server_GetControlPage());
+    }
+  }
 }
 
 
-/* Server_HandleClient()
-    - This functions handles Clients requests (webbrowsers requests)
-    - This function should be called periodically in the loop
-*/
+/* 
+ *  handleLogin()
+ *    - This functions handles the Server's requests related to the login website
+ */
+void handleLogin()
+{
+  Server_Manager s;
+  String msg = "";
+  
+  if(WServer.hasHeader("Cookie"))
+  {
+    String cookie = WServer.header("Cookie");
+  }
+  
+  if(WServer.hasArg("DISCONNECT"))
+  {
+    Serial.println("SERVER -> LOGOUT");
+    
+    WServer.sendHeader("Location","/login");
+    WServer.sendHeader("Cache-Control","no-cache");
+    WServer.sendHeader("Set-Cookie","ESPSESSIONID=0");
+    WServer.send(301);
+  }
+
+  else
+  {
+    if(WServer.hasArg("USERNAME") && WServer.hasArg("PASSWORD"))
+    {
+      /* Check if ligin credentials are appropriate */
+      if(WServer.arg("USERNAME") == user_username &&  WServer.arg("PASSWORD") == user_password)
+      {
+        WServer.sendHeader("Location","/");
+        WServer.sendHeader("Cache-Control","no-cache");
+        WServer.sendHeader("Set-Cookie","ESPSESSIONID=1");
+        WServer.send(301);
+        
+        Serial.println("SERVER -> LOGIN OK");
+      }
+      else
+      {
+        msg = "Wrong username or password!";
+        Serial.println("SERVER -> LOGIN ERROR");
+      }    
+    }
+
+    /* Show Login page */
+    WServer.send(200, "text/html", s.Server_GetLoginPage(msg));
+  }
+}
+
+/* ==================================================================== */
+/* ============================ functions ============================= */
+/* ==================================================================== */
+
+/* 
+ * Server_Init()
+ *  - This functions initializes the server
+ *  - It should be called when the WiFi connection is established
+ */
+void Server_Manager::Server_Init()
+{ 
+  /* Read Username and Password for Website access from NvM */
+  e.Nvm_CredentialsRead(EEPROM_USER_CREDENTIALS_START_ADDR, user_username, user_password);
+  
+  /* Connect the callbacks */
+  WServer.on("/", handleControlData);
+  WServer.on("/login", handleLogin);
+
+  /* List of headers to be recorded */
+  const char *headerkeys[] = {"User-Agent","Cookie"};
+  size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
+  
+  /* Ask server to track these headers */
+  WServer.collectHeaders(headerkeys, headerkeyssize);
+  WServer.begin();
+  
+  Serial.println("SERVER -> Started");
+
+  Serial.printf("SERVER -> USERNAME: %s\n", user_username.c_str());
+  Serial.printf("SERVER -> PASSWORD: %s\n", user_password.c_str());
+}
+
+
+/* 
+ * Server_HandleClient()
+ *  - This functions handles Clients requests (webbrowsers requests)
+ *  - This function should be called periodically in the loop
+ */
 void Server_Manager::Server_HandleClient()
 {
   WServer.handleClient();
 }
 
 
-/* Server_HandleRequest()
-    - This functions handles the Server's requests
-*/
-void Server_HandleRequest()
+/* 
+ * Server_IsAuthentified()
+ *  - This function checks if header is present and correct
+ */
+bool Server_Manager::Server_IsAuthentified()
 {
-  Server_Manager s;
-  if(WServer.hasArg("D4")) 
-  {
-    s.Server_UpdateGPIO(Gpio_ID_D4, WServer.arg("D4")); 
-  } 
+  bool success_status = false;
   
-  else if(WServer.hasArg("D5")) 
+  if(WServer.hasHeader("Cookie"))
   {
-    s.Server_UpdateGPIO(Gpio_ID_D5, WServer.arg("D5")); 
-  } 
-  
-  else
-  {
-    WServer.send(200, "text/html", s.Server_GetPage());
-  }  
+    String cookie = WServer.header("Cookie");
+    
+    if(cookie.indexOf("ESPSESSIONID=1") != -1) 
+    {
+      success_status = true;
+    }
+    else
+    {
+      Serial.println("SERVER -> Authentication Failed");
+    }
+  }
+  return success_status;
 }
 
 
-/* Server_UpdateGPIO()
-    - This functions updates the GPIO information in website's source code
-*/
+/* 
+ * Server_UpdateGPIO()
+ *  - This functions updates the GPIO information in website's source code
+ */
 void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 {
   Serial.print("GPIO -> "); 
@@ -82,7 +214,7 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 
     /* Change span's value */
     GpioState[gpio_id] = "On";
-    WServer.send(200, "text/html", Server_GetPage());
+    WServer.send(200, "text/html", Server_GetControlPage());
   } 
   
   else if(gpio_state == "0")
@@ -91,7 +223,7 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 
     /* Change span's value */
     GpioState[gpio_id] = "Off";
-    WServer.send(200, "text/html", Server_GetPage());
+    WServer.send(200, "text/html", Server_GetControlPage());
   } 
   else 
   {
@@ -99,10 +231,12 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
   }  
 }
 
-/* Server_GetPage()
-    - This functions prints the website on the server
-*/
-String Server_Manager::Server_GetPage()
+
+/* 
+ *  Server_GetControlPage()
+ *  - This functions prints the info website on the server
+ */
+String Server_Manager::Server_GetControlPage()
 {
   String  webpage = "";
   
@@ -115,7 +249,10 @@ String Server_Manager::Server_GetPage()
   webpage +=       "<div class='row'>";
   webpage +=          "<div class='col-md-12'>";
   webpage +=             "<div class='page-header'>";
-  webpage +=                "<h1>iBeacon! <small>Smart home solutions</small></h1>";
+  webpage +=                "<h1>";
+  webpage +=                  "iBeacon! <small>Smart home solutions</small>";
+  webpage +=                   "<a href=\'/login?DISCONNECT=YES\' class='btn' type='button'>LogOut</a>";
+  webpage +=                "</h1>";
   webpage +=             "</div>";
   webpage +=          "</div>";
   webpage +=       "</div>";
@@ -262,3 +399,73 @@ String Server_Manager::Server_GetPage()
   return webpage;
 }
 
+
+/* 
+ *  Server_GetLoginPage()
+ *   - This functions prints the login website on the server
+ */
+String Server_Manager::Server_GetLoginPage(String info_msg)
+{
+  String  webpage = "";
+
+  webpage += "<html charset=UTF-8><head><meta http-equiv='refresh' content='60' name='viewport' content='width=device-width, initial-scale=1'/>";
+  webpage +=   "<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script><script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>";
+  webpage +=   "<link href='https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/darkly/bootstrap.min.css' rel='stylesheet'>";
+  webpage +=   "<title>Login ESP8266 IoT - EMBEDDED SOLUTIONS</title></head><body>";
+
+  webpage +=    "<div class='container-fluid'>";
+  webpage +=       "<div class='row'>";
+  webpage +=          "<div class='col-md-12'>";
+  webpage +=             "<div class='page-header'>";
+  webpage +=                "<h1>iBeacon! <small>Login page</small></h1>";
+  webpage +=             "</div>";
+             
+  webpage +=             "<form class='form-horizontal' role='form'>";
+  webpage +=                "<div class='form-group'>";
+                      
+  webpage +=                   "<label class='col-sm-2 control-label'>";
+  webpage +=                      "User";
+  webpage +=                   "</label>";
+
+                               /* Username text handling */
+  webpage +=                   "<div class='col-sm-3'>";
+  webpage +=                      "<input type='text' class='form-control' name='USERNAME' placeholder='user name'><br>";
+  webpage +=                   "</div>";
+  
+  webpage +=                "</div>";
+                  
+  webpage +=                "<div class='form-group'>";
+  webpage +=                   "<label class='col-sm-2 control-label'>";
+  webpage +=                      "Password";
+  webpage +=                   "</label>";
+
+                               /* Password text handling */
+  webpage +=                   "<div class='col-sm-3'>";
+  webpage +=                      "<input type='password' class='form-control' name='PASSWORD' placeholder='password'><br>";
+  webpage +=                   "</div>";
+  
+  webpage +=                "</div>";
+                  
+  webpage +=                "<div class='form-group'>";
+  webpage +=                   "<div class='col-sm-offset-2 col-sm-10'>";
+  
+                                  /* Sign In Button handling */
+  webpage +=                      "<form action='/login' method='POST'>";
+  webpage +=                         "<button type='submit button' name='SUBMIT' value='Submit' class='btn btn-default'>";
+  webpage +=                            "Sign in";
+  webpage +=                         "</button>";
+  webpage +=                      "</form>";
+  webpage +=                      "&nbsp&nbsp&nbsp&nbsp" + info_msg;
+  
+  webpage +=                   "</div>";
+  webpage +=                "</div>";
+  webpage +=             "</form>";
+  webpage +=          "</div>";
+  webpage +=       "</div>";
+  webpage +=    "</div>";
+  webpage += "</body></html>";
+   
+  return webpage;
+}
+
+/* EOF */

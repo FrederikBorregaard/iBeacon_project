@@ -1,9 +1,38 @@
+/*
+ *  @Author:          Jakub Witowski
+ *  @Project name:    iBeacon
+ *  @File name:       serial_event.cpp
+ */
+
+/* ==================================================================== */
+/* ========================== include files =========================== */
+/* ==================================================================== */
 #include "serial_event.h"
 
+/* ==================================================================== */
+/* ============================= defines ============================== */
+/* ==================================================================== */
 #define CREDENTIALS_CHANGE_COMPLETED()  (login_state == credentials_change_completed)
 
+#define REBOOT()                        Serial.println("REBOOT -> Reboot in progress"); \
+                                        WiFi.disconnect();                              \
+                                        ESP.restart();                                  \
+                                        while(1)
+                                                 
+/* ==================================================================== */
+/* ======================== global variables ========================== */
+/* ==================================================================== */
+
+/* NvM handler */
 Nvm_Manager eep;
 
+/* ==================================================================== */
+/* ============================ functions ============================= */
+/* ==================================================================== */
+
+/*
+ * Serial_Event Ctor
+ */
 Serial_Event::Serial_Event()
 {
   Serial.begin(SERIAL_BAUDRATE);
@@ -13,15 +42,19 @@ Serial_Event::Serial_Event()
   inputString = "";
   new_ssid = "";
   new_password = "";
+  new_username = "";
   
-  inputString.reserve(EEPROM_SIZE_BYTE);
-  new_ssid.reserve(EEPROM_SIZE_BYTE);
-  new_password.reserve(EEPROM_SIZE_BYTE);
+  inputString.reserve(EEPROM_CREDENTIAL_MAX_SIZE);
+  new_ssid.reserve(EEPROM_CREDENTIAL_MAX_SIZE);
+  new_password.reserve(EEPROM_CREDENTIAL_MAX_SIZE);
+  new_username.reserve(EEPROM_CREDENTIAL_MAX_SIZE);
 }
 
+
 /*
- * Perform an action according to inputString given in
- * the Serial_RxEvent
+ * Serial_ParseString
+ *  - This function performs an action according to inputString given in
+ *    the Serial_RxEvent
  */
 void Serial_Event::Serial_ParseString(String s)
 { 
@@ -30,34 +63,78 @@ void Serial_Event::Serial_ParseString(String s)
   
   switch(login_state)
   {
-    case credentials_change_request:
+    /**********************************************
+     *        ACCESS POINT CREDENTIALS            *
+     **********************************************/
+    case ap_credentials_change_request:
     {
       new_ssid = s;      
-      login_state = credentials_ssid_stored;
+      login_state = ap_credentials_ssid_stored;
       
-      Serial.println("LOGIN -> Enter PASSWORD");
+      Serial.println("LOGIN AP -> Enter PASSWORD");
       break;
     }
 
-    case credentials_ssid_stored:
+    case ap_credentials_ssid_stored:
     {
       new_password = s;
       login_state = credentials_change_completed;
       
-      /* Write new credentials to the NvM */
-      eep_write_stat = eep.Nvm_CredentialsWrite(new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
+      /* Write new AP credentials to the NvM */
+      eep_write_stat = eep.Nvm_CredentialsWrite(EEPROM_AP_CREDENTIALS_START_ADDR, new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
       
       if(EEPROM_WRITE_ERROR != eep_write_stat)
       {
-        Serial.println("LOGIN -> Credentials CHANGED");
+        Serial.println("LOGIN AP -> Credentials CHANGED");
+
+        /* Reboot device */
+        REBOOT();
       }
       else
       {
-        Serial.println("LOGIN -> Credentials NOT CHANGED");
-      }
+        Serial.println("LOGIN AP -> Credentials NOT CHANGED");
 
-      /* Start reconnect timer */
-      Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
+        /* Resume reconnect timer */
+        Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
+      }
+      
+      break;
+    }
+
+    /**********************************************
+     *              USER CREDENTIALS              *
+     **********************************************/
+    case user_credentials_change_request:
+    {
+      new_username = s;      
+      login_state = user_credentials_username_stored;
+
+      Serial.println("LOGIN USER -> Enter PASSWORD");
+      break;
+    }
+
+    case user_credentials_username_stored:
+    {
+      new_password = s;
+      login_state = credentials_change_completed;
+
+      /* Write new USER credentials to the NvM */
+      eep_write_stat = eep.Nvm_CredentialsWrite(EEPROM_USER_CREDENTIALS_START_ADDR, new_username.c_str(), new_password.c_str(), strlen(new_username.c_str()), strlen(new_password.c_str()));
+      
+      if(EEPROM_WRITE_ERROR != eep_write_stat)
+      {
+        Serial.println("LOGIN USER -> Credentials CHANGED");
+
+        /* Reboot device */
+        REBOOT();
+      }
+      else
+      {
+        Serial.println("LOGIN USER -> Credentials NOT CHANGED");
+
+        /* Restore reconnect timer */
+        Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
+      }
       
       break;
     }
@@ -76,23 +153,32 @@ void Serial_Event::Serial_ParseString(String s)
 
   if((String("reboot") == s) && CREDENTIALS_CHANGE_COMPLETED())
   {
-    Serial.println("REBOOT -> Reboot in progress");
-    
-    WiFi.disconnect();
-    ESP.restart();
-
-    /* Wait until the reset occurs */
-    while(1);
+    REBOOT();
   }
   
-  else if((String("login") == s) && CREDENTIALS_CHANGE_COMPLETED())
+  else if((String("ap_login") == s) && CREDENTIALS_CHANGE_COMPLETED())
   {
     /* Stop reconnect timer */
     Stop_reconnect_tmr();
-    Serial.println("LOGIN -> Enter SSID");
+    Serial.println("LOGIN AP -> Enter SSID");
     
-    login_state = credentials_change_request;
+    login_state = ap_credentials_change_request;
   }
+
+  else if((String("user_login") == s) && CREDENTIALS_CHANGE_COMPLETED())
+  {
+    /* Stop reconnect timer */
+    Stop_reconnect_tmr();
+    Serial.println("LOGIN USER -> Enter USERNAME");
+    
+    login_state = user_credentials_change_request;
+  }
+
+  else if((String("raw_eeprom") == s) && CREDENTIALS_CHANGE_COMPLETED())
+  {
+    eep.NvM_ReadRawData();
+  }
+  
 
   else
   {
@@ -106,18 +192,20 @@ void Serial_Event::Serial_ParseString(String s)
   inputString = "";
 }
 
+
 /*
-  SerialEvent occurs whenever a new data comes in the hardware serial RX. This
-  routine is run between each time loop() runs, so using delay inside loop can
-  delay response. Multiple bytes of data may be available.
-*/
+ * Serial_RxEvent
+ *  - SerialEvent occurs whenever a new data comes in the hardware serial RX. This
+ *    routine is called periodically in the loop() function, so using delay inside loop can
+ *    delay response. Multiple bytes of data may be available.
+ */
 void Serial_Event::Serial_RxEvent()
 {
   while(Serial.available()) 
   {
     char inChar = (char)Serial.read();
     
-    /* if the incoming character is a newline - set a flag */
+    /* If the incoming character is a newline - set a flag */
     if(inChar == '\n') 
     {
       Serial_ParseString(inputString);
@@ -130,3 +218,4 @@ void Serial_Event::Serial_RxEvent()
   }
 }
 
+/* EOF */

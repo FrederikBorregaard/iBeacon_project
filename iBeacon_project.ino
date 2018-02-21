@@ -1,6 +1,5 @@
 /*
  *  @Author:          Jakub Witowski 
- *  @Creation date:   todo 
  *  @Project name:    iBeacon
  * 
  * 
@@ -9,16 +8,19 @@
  *    - Implemented basic command line interface
  *      - Serial Baud Rate
  *      - Full logging implemented
- *      - "login", and "reboot" command
+ *      - "ap_login", "user_login", "reboot", "raw_eeprom" command
  *      
  *    - Implemented WiFi AP connection
- *      - SSID and PASSWORD are stored in EEPROM
- *      - change credentials during the runtime using "login" command
+ *      - AP_SSID and AP_PASSWORD are encrypted and stored in EEPROM
+ *      - change AP credentials during the runtime using "ap_login" command
+ *      - change USER credentials during the runtime using "user_login" command
  *      
  *    - Reboot support
  *      - Reboot after configurable timeout when cannot connect to the AP
  *      - Reboot after configurable timeout when lost WiFi connection and cannot restore it
  *      
+ *    - Login website to secure remote access
+ *      - USERNAME and USER_PASSWORD are encrypted and stored in EEPROM
  *       
  *    Configurable parameters:
  *      - Serial Baud Rate: 115200
@@ -39,12 +41,9 @@
 #include "server_manager.h"
 
 /* ==================================================================== */
-/* ============================ constants ============================= */
-/* ==================================================================== */         
-
-/* ==================================================================== */
 /* ======================== global variables ========================== */
 /* ==================================================================== */
+
 /* Establish connection timer related objects */
 Ticker timer_establish_connection;
 Ticker timer_reconnect;
@@ -66,9 +65,10 @@ inline void reconnect_failed_timeout_wrapper();
 /* ============================ functions ============================= */
 /* ==================================================================== */
 
-/*  setup()
-      - This function is called when the program starts
-*/
+/*  
+ *  setup()
+ *    - This function is called when the program starts
+ */
 void setup()
 {  
   Serial.println("REBOOT -> OK");
@@ -83,9 +83,11 @@ void setup()
   Serial.println("WIFI -> Setup complete");
 }
 
-/*  loop()
-      - This function is called periodically at the runtime
-*/
+
+/*  
+ *   loop()
+ *    - This function is called periodically at the runtime
+ */
 void loop()
 { 
   if(WIFI_IS_DISCONNECTED())
@@ -125,38 +127,54 @@ void loop()
   serial_e.Serial_RxEvent();
 }
 
-/*  reconnect_failed_timeout_wrapper()
-      - This wrapper is called on timer_reconnect timers timeout event
-*/
+
+/*  
+ *   reconnect_failed_timeout_wrapper()
+ *    - This wrapper is called on timer_reconnect timers timeout event
+ */
 inline void reconnect_failed_timeout_wrapper()
 {
   wifi.WiFi_reconnect_failed_timeout_event();
 }
 
-/*  reconnect_failed_timeout_wrapper()
-      - This wrapper is called on timer_establish_connection timers timeout event
-*/
+
+/*  
+ *   establish_connection_timeout_wrapper()
+ *    - This wrapper is called on timer_establish_connection timers timeout event
+ */
 inline void establish_connection_timeout_wrapper()
 {
   wifi.WiFi_establish_connection_timeout_event();
 }
 
+
 /*
- *  Timer related functions
+ *  Start_est_connection_tmr
+ *    - This function starts timer_establish_connection timer
  */
 void Start_est_connection_tmr(uint16_t tmout)
 {
   timer_establish_connection.once_ms(tmout, establish_connection_timeout_wrapper);
 }
 
+
+/*
+ *  Start_reconnect_tmr
+ *    - This function starts timer_reconnect timer
+ */
 void Start_reconnect_tmr(uint16_t tmout)
 {
   timer_reconnect.attach_ms(tmout, reconnect_failed_timeout_wrapper);
 }
 
+
+/*
+ *  Stop_reconnect_tmr
+ *    - This function stops timer_reconnect timer
+ */
 void Stop_reconnect_tmr()
 {
   timer_reconnect.detach();
 }
 
-
+/* EOF */
