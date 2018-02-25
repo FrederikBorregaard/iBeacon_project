@@ -15,10 +15,10 @@
 /* ==================================================================== */
 /* ============================= defines ============================== */
 /* ==================================================================== */
-#define EEPROM_ALLOCATED_SIZE_BYTE        (256)
+#define EEPROM_ALLOCATED_SIZE_BYTE          (256)
 
 /* Max size for storing single pair of credentials (2 Pairs of credentials are stored AP and USER) */
-#define EEPROM_CREDENTIAL_MAX_SIZE        (EEPROM_ALLOCATED_SIZE_BYTE / 2)
+#define EEPROM_CREDENTIAL_MAX_SIZE          (EEPROM_ALLOCATED_SIZE_BYTE / 2)
 
 /* Access Point credentials Start Address */
 #define EEPROM_AP_CREDENTIALS_START_ADDR    (0x00)
@@ -26,8 +26,8 @@
 /* User credentials Start Address - for website access */
 #define EEPROM_USER_CREDENTIALS_START_ADDR  (0x80)
 
-#define EEPROM_WRITE_OK               ((bool)true)
-#define EEPROM_WRITE_ERROR            ((bool)false)
+#define EEPROM_WRITE_OK                     ((bool)true)
+#define EEPROM_WRITE_ERROR                  ((bool)false)
 
 /* ==================================================================== */
 /* ============================ classes =============================== */

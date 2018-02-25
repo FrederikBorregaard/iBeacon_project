@@ -8,22 +8,22 @@
 /* ========================== include files =========================== */
 /* ==================================================================== */
 #include "wifi_manager.h"
-#include "nvm_manager.h"
-#include "server_manager.h"
 
 /* ==================================================================== */
 /* ======================== global variables ========================== */
 /* ==================================================================== */
+/* WiFi handler */
+WiFi_Manager wifi;
+
+/* NvM handler */
+extern Nvm_Manager eeprom;
+
+/* Web server handler */
+extern Server_Manager server;
 
 /* SSID and Password of the AP */
 String ap_ssid;
 String ap_pass;
-
-/* NvM handler */
-Nvm_Manager eepr;
-
-/* Web server handler */
-Server_Manager srvr;
 
 /* WiFi establishing connection related flag */
 bool establish_failed = false;
@@ -43,7 +43,7 @@ bool connection_lost = false;
 void WiFi_Manager::WiFi_Connect()
 { 
   /* Read SSID and PASSWORD for AP from NvM */
-  eepr.Nvm_CredentialsRead(EEPROM_AP_CREDENTIALS_START_ADDR, ap_ssid, ap_pass);
+  eeprom.Nvm_CredentialsRead(EEPROM_AP_CREDENTIALS_START_ADDR, ap_ssid, ap_pass);
   
   /* Connect to the access point 
    *  
@@ -89,7 +89,7 @@ void WiFi_Manager::WiFi_Connect()
     Serial.println(WiFi.localIP());
 
     /* Start server */
-    srvr.Server_Init();
+    server.Server_Init();
   }
 }
 

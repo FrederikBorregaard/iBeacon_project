@@ -12,25 +12,30 @@
 /* ==================================================================== */
 /* ======================== global variables ========================== */
 /* ==================================================================== */
+/* Create WebServer instance */
+ESP8266WebServer WServer(80);
 
-/* Dummy values */
-float temperature = 22.3 ;
-float humidity = 45;
-float pressure = 1002.5;
-uint8_t light_level = 69;
+/* Serber Manager handler */
+Server_Manager server;
+
+/* NvM handler */
+extern Nvm_Manager eeprom;
+
+/* Sensor handler */
+extern Sensor sensor;
+
+/* Sensor values structure handler */
+extern Sensor::Sensor_Values_T sens_val;
+
+/* SensorState struct handler */
+Server_SensorState_T sensorState;
 
 /* Username and Password of the Website access */
 String user_username;
 String user_password;
 
-/* Create WebServer instance */
-ESP8266WebServer WServer(80);
-
 /* Initialize the GpioState tab */
 String  GpioState[GPIO_REMOTE_USED] = {"OFF", "OFF"};
-
-/* NvM handler */
-Nvm_Manager e;
 
 /* ==================================================================== */
 /* ================== local function declarations ===================== */
@@ -140,8 +145,8 @@ void handleLogin()
 void Server_Manager::Server_Init()
 { 
   /* Read Username and Password for Website access from NvM */
-  e.Nvm_CredentialsRead(EEPROM_USER_CREDENTIALS_START_ADDR, user_username, user_password);
-  
+  eeprom.Nvm_CredentialsRead(EEPROM_USER_CREDENTIALS_START_ADDR, user_username, user_password);
+ 
   /* Connect the callbacks */
   WServer.on("/", handleControlData);
   WServer.on("/login", handleLogin);
@@ -205,11 +210,11 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 {
   Serial.print("GPIO -> "); 
   Serial.print(GpioPin[gpio_id]); 
-  Serial.print(": "); 
-  Serial.println(gpio_state);
-  
+  Serial.printf(": "); 
+   
   if(gpio_state == "1") 
   {
+    Serial.printf("ON\n");
     digitalWrite(GpioPin[gpio_id], HIGH);
 
     /* Change span's value */
@@ -219,6 +224,7 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
   
   else if(gpio_state == "0")
   {
+    Serial.printf("OFF\n");
     digitalWrite(GpioPin[gpio_id], LOW);
 
     /* Change span's value */
@@ -233,11 +239,24 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 
 
 /* 
+ *  Server_Update_SensorsState()
+ *  - This functions updates the environment sensors status on the website
+ */
+void Server_Manager::Server_Update_SensorsState(String t_status, String p_status, String h_status, String l_status)
+{
+  sensorState.Temp_SensorState = t_status;
+  sensorState.Pres_SensorState = p_status;
+  sensorState.Humid_SensorState = h_status;
+  sensorState.Light_SensorState = l_status;
+}
+
+
+/* 
  *  Server_GetControlPage()
  *  - This functions prints the info website on the server
  */
 String Server_Manager::Server_GetControlPage()
-{
+{ 
   String  webpage = "";
   
   webpage += "<html charset=UTF-8><head><meta http-equiv='refresh' content='60' name='viewport' content='width=device-width, initial-scale=1'/>";
@@ -337,41 +356,41 @@ String Server_Manager::Server_GetControlPage()
   webpage +=                "<tbody>";
   webpage +=                   "<tr class='active'><td>1</td><td>Temperature</td>";
   webpage +=                      "<td>";
-  webpage +=                         temperature;
+  webpage +=                         sens_val.temperature;
   webpage +=                         " &#8451";
   webpage +=                      "</td>";
   webpage +=                      "<td>";
-  webpage +=                         "OK";
+  webpage +=                         sensorState.Temp_SensorState;
   webpage +=                      "</td>";
   webpage +=                   "</tr>";
   
   webpage +=                   "<tr class='success'><td>2</td><td>Humidity</td>";
   webpage +=                      "<td>";
-  webpage +=                         humidity;
+  webpage +=                         sens_val.humidity;
   webpage +=                         " %";
   webpage +=                      "</td>";
   webpage +=                      "<td>";
-  webpage +=                         "OK";
+  webpage +=                         sensorState.Humid_SensorState;
   webpage +=                      "</td>";
   webpage +=                   "</tr>";
   
   webpage +=                   "<tr class='warning'><td>3</td> <td>Pressure</td>";
   webpage +=                      "<td>";
-  webpage +=                         pressure;
+  webpage +=                         sens_val.pressure;
   webpage +=                         " hPa";
   webpage +=                      "</td>";
   webpage +=                      "<td>";
-  webpage +=                         "OK";
+  webpage +=                         sensorState.Pres_SensorState;
   webpage +=                      "</td>";
   webpage +=                   "</tr>";
   
   webpage +=                   "<tr class='danger'><td>4</td><td>Light level</td>";
   webpage +=                      "<td>";
-  webpage +=                         light_level;
+  webpage +=                         sens_val.light;
   webpage +=                         " %";
   webpage +=                      "</td>";
   webpage +=                      "<td>";
-  webpage +=                         "ERROR";
+  webpage +=                         sensorState.Light_SensorState;
   webpage +=                      "</td>";
   webpage +=                   "</tr>";
   

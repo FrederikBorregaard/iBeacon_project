@@ -30,6 +30,7 @@ class Gpio_Manager
 {
   public:
     void Gpio_Init();
+    void Gpio_DebugPrint();
 };
 
 #endif /* _GPIO_H_ */

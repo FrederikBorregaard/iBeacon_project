@@ -21,8 +21,14 @@
 #define EEPROM_DECRYPT_BYTE(x)    ((char)((x + 13) / 2))
 
 /* Only for debug usage - storing raw data in EEPROM is unsafety */
-#define EEPROM_RAW_READ(x)       ((char)(x))
-#define EEPROM_RAW_WRITE(x)      (x)
+#define EEPROM_RAW_READ(x)        ((char)(x))
+#define EEPROM_RAW_WRITE(x)       (x)
+
+/* ==================================================================== */
+/* ======================== global variables ========================== */
+/* ==================================================================== */
+/* EEPROM handler */
+Nvm_Manager eeprom;
 
 /* ==================================================================== */
 /* ============================ functions ============================= */

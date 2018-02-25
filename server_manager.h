@@ -17,7 +17,6 @@
 /* ==================================================================== */
 /* ============================ typedefs ============================== */
 /* ==================================================================== */
-
 /* Enumerate for GPIO's ID */
 typedef enum Gpio_ID_Tag
 {
@@ -26,6 +25,19 @@ typedef enum Gpio_ID_Tag
   Gpio_ID_Last
   
 }Gpio_ID_T;
+
+/* ==================================================================== */
+/* =========================== structures ============================= */
+/* ==================================================================== */
+/* Sensors status state to be printed on the website */
+typedef struct Server_SensorState_Tag
+{
+  String Temp_SensorState;
+  String Humid_SensorState;
+  String Pres_SensorState;
+  String Light_SensorState;
+  
+}Server_SensorState_T;
 
 /* ==================================================================== */
 /* ============================ classes =============================== */
@@ -39,6 +51,8 @@ class Server_Manager
     String Server_GetLoginPage(String info_msg);
     void Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state);
     bool Server_IsAuthentified();
+    
+    void Server_Update_SensorsState(String t_status, String p_status, String h_status, String l_status);
 };
 
 #endif /* _SERVER_MANAGER_H_ */

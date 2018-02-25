@@ -22,9 +22,17 @@
 /* ==================================================================== */
 /* ======================== global variables ========================== */
 /* ==================================================================== */
+/* Serial Event handler */
+Serial_Event serial_e;
 
 /* NvM handler */
-Nvm_Manager eep;
+extern Nvm_Manager eeprom;
+
+/* Sensor handler */
+extern Sensor sensor;
+
+/* GPIO handler */
+extern Gpio_Manager gpio;
 
 /* ==================================================================== */
 /* ============================ functions ============================= */
@@ -81,7 +89,7 @@ void Serial_Event::Serial_ParseString(String s)
       login_state = credentials_change_completed;
       
       /* Write new AP credentials to the NvM */
-      eep_write_stat = eep.Nvm_CredentialsWrite(EEPROM_AP_CREDENTIALS_START_ADDR, new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
+      eep_write_stat = eeprom.Nvm_CredentialsWrite(EEPROM_AP_CREDENTIALS_START_ADDR, new_ssid.c_str(), new_password.c_str(), strlen(new_ssid.c_str()), strlen(new_password.c_str()));
       
       if(EEPROM_WRITE_ERROR != eep_write_stat)
       {
@@ -119,7 +127,7 @@ void Serial_Event::Serial_ParseString(String s)
       login_state = credentials_change_completed;
 
       /* Write new USER credentials to the NvM */
-      eep_write_stat = eep.Nvm_CredentialsWrite(EEPROM_USER_CREDENTIALS_START_ADDR, new_username.c_str(), new_password.c_str(), strlen(new_username.c_str()), strlen(new_password.c_str()));
+      eep_write_stat = eeprom.Nvm_CredentialsWrite(EEPROM_USER_CREDENTIALS_START_ADDR, new_username.c_str(), new_password.c_str(), strlen(new_username.c_str()), strlen(new_password.c_str()));
       
       if(EEPROM_WRITE_ERROR != eep_write_stat)
       {
@@ -176,10 +184,19 @@ void Serial_Event::Serial_ParseString(String s)
 
   else if((String("raw_eeprom") == s) && CREDENTIALS_CHANGE_COMPLETED())
   {
-    eep.NvM_ReadRawData();
+    eeprom.NvM_ReadRawData();
+  }
+
+  else if((String("sensor") == s) && CREDENTIALS_CHANGE_COMPLETED())
+  {
+    sensor.Sensor_DebugPrint();
+  }
+
+  else if((String("gpio") == s) && CREDENTIALS_CHANGE_COMPLETED())
+  {
+    gpio.Gpio_DebugPrint();
   }
   
-
   else
   {
     if(CREDENTIALS_CHANGE_COMPLETED())

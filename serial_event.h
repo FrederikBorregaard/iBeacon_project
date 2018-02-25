@@ -13,6 +13,7 @@
 #include <ESP8266WiFi.h>
 #include "nvm_manager.h"
 #include "tmr_config.h"
+#include "snsr_manager.h"
 
 /* ==================================================================== */
 /* ============================= defines ============================== */
