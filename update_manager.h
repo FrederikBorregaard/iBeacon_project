@@ -17,21 +17,20 @@
 /* ==================================================================== */
 /* ============================ defines =============================== */
 /* ==================================================================== */
-#define UPDATE_MANAGER_HOSTNAME   ("admin")
+#define UPDATE_MANAGER_USERNAME   ("admin")
 #define UPDATE_MANAGER_PASSWORD   ("admin")
-//#define UPDATE_MANAGER_HOSTNAME   ("admin")
-//#define UPDATE_MANAGER_PASSWORD   ("admin")
-//#define UPDATE_PATH               ("/firmware")
-//#define UPDATE_HOST               ("esp8266-webupdate")
+#define UPDATE_PATH               ("/firmware")
+#define UPDATE_HOST               ("esp8266-webupdate")
+
 /* ==================================================================== */
 /* ============================ classes =============================== */
 /* ==================================================================== */
 class Update_Manager
 {
   private:
-    const char* host = "esp8266-webupdate";
-    const char* update_path = "/firmware";
-    const char* update_username = UPDATE_MANAGER_HOSTNAME;
+    const char* host = UPDATE_HOST;
+    const char* update_path = UPDATE_PATH;
+    const char* update_username = UPDATE_MANAGER_USERNAME;
     const char* update_password = UPDATE_MANAGER_PASSWORD;
     
   public:

@@ -145,7 +145,9 @@ void handleLogin()
  */
 void handleUpdate()
 {
-   ota.Update_Manager_Init();
+  /* Initialize update manager */
+  ota.Update_Manager_Init();
+  WServer.send(200, "text/html", "<html>For update visit: <a href=\"url\">http://esp8266-webupdate/firmware</a></html>");
 }
 
 /* ==================================================================== */

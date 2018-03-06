@@ -32,10 +32,16 @@ extern ESP8266WebServer WServer;
 void Update_Manager::Update_Manager_Init()
 {
   Serial.printf("OTA -> Update request\r\n");
-  
+ 
   MDNS.begin(host);
+  Serial.printf("OTA -> MDNS host started\r\n");
+  
   httpUpdater.setup(&WServer, update_path, update_username, update_password);
+  Serial.printf("OTA -> Update Server setup complete\r\n");
+  
   MDNS.addService("http", "tcp", 80);
+  Serial.printf("OTA -> MDNS service added\r\n");
+  
   Serial.printf("OTA -> Update server: http://%s.local%s\r\n", host, update_path);
 }
 
