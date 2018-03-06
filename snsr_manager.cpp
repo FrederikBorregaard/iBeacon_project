@@ -35,7 +35,7 @@ bool Sensor::Sensor_Init()
   bool sensor_init_ok = sensor.begin();
 
   /* Print BME280 I2C address in hex */
-  Serial.printf("SENSOR -> BME280 I2C addr: 0x%.2X\n", BME280_ADDRESS);
+  Serial.printf("SENSOR -> BME280 I2C addr: 0x%.2X\r\n", BME280_ADDRESS);
   
   /* Init values structure */
   sens_val.temperature = 0.0F;
@@ -61,11 +61,11 @@ bool Sensor::Sensor_Init()
                         Adafruit_BME280::FILTER_X16,
                         Adafruit_BME280::STANDBY_MS_0_5);
 
-    Serial.println("SENSOR -> Init OK");
+    Serial.printf("SENSOR -> Init OK\r\n");
   }
   else
   {
-    Serial.println("SENSOR -> Init ERROR");
+    Serial.printf("SENSOR -> Init ERROR\r\n");
   }
   return sensor_init_ok;
 }
@@ -131,10 +131,10 @@ void Sensor::Sensor_UpdateValues()
  */
 void Sensor::Sensor_DebugPrint()
 {
-  Serial.printf("SENSOR -> TEMP: %.2f\n", sens_val.temperature);
-  Serial.printf("SENSOR -> PRES: %.2f\n", sens_val.pressure);
-  Serial.printf("SENSOR -> HUMI: %.2f\n", sens_val.humidity);
-  Serial.printf("SENSOR -> LIGHT: %d\n", sens_val.light);
+  Serial.printf("SENSOR -> TEMP: %.2f\r\n", sens_val.temperature);
+  Serial.printf("SENSOR -> PRES: %.2f\r\n", sens_val.pressure);
+  Serial.printf("SENSOR -> HUMI: %.2f\r\n", sens_val.humidity);
+  Serial.printf("SENSOR -> LIGHT: %d\r\n", sens_val.light);
 }
 
 /* EOF */

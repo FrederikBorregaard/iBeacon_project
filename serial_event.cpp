@@ -14,9 +14,9 @@
 /* ==================================================================== */
 #define CREDENTIALS_CHANGE_COMPLETED()  (login_state == credentials_change_completed)
 
-#define REBOOT()                        Serial.println("REBOOT -> Reboot in progress"); \
-                                        WiFi.disconnect();                              \
-                                        ESP.restart();                                  \
+#define REBOOT()                        Serial.printf("REBOOT -> Reboot in progress\r\n"); \
+                                        WiFi.disconnect();                                 \
+                                        ESP.restart();                                     \
                                         while(1)
                                                  
 /* ==================================================================== */
@@ -79,7 +79,7 @@ void Serial_Event::Serial_ParseString(String s)
       new_ssid = s;      
       login_state = ap_credentials_ssid_stored;
       
-      Serial.println("LOGIN AP -> Enter PASSWORD");
+      Serial.printf("LOGIN AP -> Enter PASSWORD\r\n");
       break;
     }
 
@@ -93,14 +93,14 @@ void Serial_Event::Serial_ParseString(String s)
       
       if(EEPROM_WRITE_ERROR != eep_write_stat)
       {
-        Serial.println("LOGIN AP -> Credentials CHANGED");
+        Serial.printf("LOGIN AP -> Credentials CHANGED\r\n");
 
         /* Reboot device */
         REBOOT();
       }
       else
       {
-        Serial.println("LOGIN AP -> Credentials NOT CHANGED");
+        Serial.printf("LOGIN AP -> Credentials NOT CHANGED\r\n");
 
         /* Resume reconnect timer */
         Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
@@ -117,7 +117,7 @@ void Serial_Event::Serial_ParseString(String s)
       new_username = s;      
       login_state = user_credentials_username_stored;
 
-      Serial.println("LOGIN USER -> Enter PASSWORD");
+      Serial.printf("LOGIN USER -> Enter PASSWORD\r\n");
       break;
     }
 
@@ -131,14 +131,14 @@ void Serial_Event::Serial_ParseString(String s)
       
       if(EEPROM_WRITE_ERROR != eep_write_stat)
       {
-        Serial.println("LOGIN USER -> Credentials CHANGED");
+        Serial.printf("LOGIN USER -> Credentials CHANGED\r\n");
 
         /* Reboot device */
         REBOOT();
       }
       else
       {
-        Serial.println("LOGIN USER -> Credentials NOT CHANGED");
+        Serial.printf("LOGIN USER -> Credentials NOT CHANGED\r\n");
 
         /* Restore reconnect timer */
         Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
@@ -154,7 +154,7 @@ void Serial_Event::Serial_ParseString(String s)
 
     default:
     {
-      Serial.println("LOGIN -> Unexpected error");
+      Serial.printf("LOGIN -> Unexpected error\r\n");
       break;
     }
   }
@@ -168,7 +168,7 @@ void Serial_Event::Serial_ParseString(String s)
   {
     /* Stop reconnect timer */
     Stop_reconnect_tmr();
-    Serial.println("LOGIN AP -> Enter SSID");
+    Serial.printf("LOGIN AP -> Enter SSID\r\n");
     
     login_state = ap_credentials_change_request;
   }
@@ -177,7 +177,7 @@ void Serial_Event::Serial_ParseString(String s)
   {
     /* Stop reconnect timer */
     Stop_reconnect_tmr();
-    Serial.println("LOGIN USER -> Enter USERNAME");
+    Serial.printf("LOGIN USER -> Enter USERNAME\r\n");
     
     login_state = user_credentials_change_request;
   }
@@ -201,7 +201,7 @@ void Serial_Event::Serial_ParseString(String s)
   {
     if(CREDENTIALS_CHANGE_COMPLETED())
     {
-      Serial.println("OK");
+      Serial.printf("OK\r\n");
     }
   }
   

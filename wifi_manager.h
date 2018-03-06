@@ -26,6 +26,7 @@ class WiFi_Manager
 {
   public:
     void WiFi_Connect();
+    void WiFi_Restore();
     void WiFi_establish_connection_timeout_event();
     void WiFi_reconnect_failed_timeout_event();
 

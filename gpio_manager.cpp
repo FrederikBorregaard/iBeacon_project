@@ -40,7 +40,7 @@ void Gpio_Manager::Gpio_DebugPrint()
   
   for(uint8_t pin_id = 0; pin_id < GPIO_REMOTE_USED; pin_id++)
   {
-    Serial.print("GPIO -> "); 
+    Serial.printf("GPIO -> "); 
     Serial.print(GpioPin[pin_id]); 
     Serial.printf(": "); 
 
@@ -49,11 +49,11 @@ void Gpio_Manager::Gpio_DebugPrint()
     
     if(0 == pin_state)
     {
-      Serial.printf("OFF\n"); 
+      Serial.printf("OFF\r\n"); 
     }
     else
     {
-      Serial.printf("ON\n"); 
+      Serial.printf("ON\r\n"); 
     }
   }
 }

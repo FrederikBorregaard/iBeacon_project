@@ -1,46 +1,43 @@
 /*
  *  @Author:          Jakub Witowski
  *  @Project name:    iBeacon
- *  @File name:       snsr_manager.h
+ *  @File name:       update_manager.h
  */
-#ifndef _SNSR_MANAGER_H_
-#define _SNSR_MANAGER_H_
+#ifndef _UPDATE_MANAGER_H_
+#define _UPDATE_MANAGER_H_
 
 /* ==================================================================== */
 /* ========================== include files =========================== */
 /* ==================================================================== */
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
+#include <ArduinoOTA.h>
+#include <ESP8266mDNS.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include "server_manager.h"
 
 /* ==================================================================== */
 /* ============================ defines =============================== */
 /* ==================================================================== */
-/* ADC pin with light sensor connected */
-#define SENSOR_ANALOG_PIN   (A0)
-
+#define UPDATE_MANAGER_HOSTNAME   ("admin")
+#define UPDATE_MANAGER_PASSWORD   ("admin")
+//#define UPDATE_MANAGER_HOSTNAME   ("admin")
+//#define UPDATE_MANAGER_PASSWORD   ("admin")
+//#define UPDATE_PATH               ("/firmware")
+//#define UPDATE_HOST               ("esp8266-webupdate")
 /* ==================================================================== */
 /* ============================ classes =============================== */
 /* ==================================================================== */
-class Sensor
+class Update_Manager
 {
   private:
-    Adafruit_BME280 sensor;
-        
-  public:
-    bool Sensor_Init();
-    void Sensor_UpdateValues();
-    void Sensor_DebugPrint();
+    const char* host = "esp8266-webupdate";
+    const char* update_path = "/firmware";
+    const char* update_username = UPDATE_MANAGER_HOSTNAME;
+    const char* update_password = UPDATE_MANAGER_PASSWORD;
     
-    typedef struct Sensor_Values_Tag
-    {
-      float temperature;
-      float pressure;
-      float humidity;
-      int light;
-    }Sensor_Values_T;
+  public:
+    void Update_Manager_Init();
 };
 
-#endif /* _SNSR_MANAGER_H_ */
+#endif /* _UPDATE_MANAGER_H_ */
 
 /* EOF */

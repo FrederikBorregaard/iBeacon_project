@@ -27,6 +27,9 @@ extern Sensor sensor;
 /* Sensor values structure handler */
 extern Sensor::Sensor_Values_T sens_val;
 
+/* Upadte manager handler */
+extern Update_Manager ota;
+
 /* SensorState struct handler */
 Server_SensorState_T sensorState;
 
@@ -42,6 +45,7 @@ String  GpioState[GPIO_REMOTE_USED] = {"OFF", "OFF"};
 /* ==================================================================== */
 inline void handleControlData();
 inline void handleLogin();
+inline void handleUpdate();
 
 /* ==================================================================== */
 /* ================== local function definitions  ===================== */
@@ -99,13 +103,14 @@ void handleLogin()
   
   if(WServer.hasArg("DISCONNECT"))
   {
-    Serial.println("SERVER -> LOGOUT");
+    Serial.printf("SERVER -> LOGOUT\r\n");
     
     WServer.sendHeader("Location","/login");
     WServer.sendHeader("Cache-Control","no-cache");
     WServer.sendHeader("Set-Cookie","ESPSESSIONID=0");
     WServer.send(301);
   }
+
 
   else
   {
@@ -119,18 +124,28 @@ void handleLogin()
         WServer.sendHeader("Set-Cookie","ESPSESSIONID=1");
         WServer.send(301);
         
-        Serial.println("SERVER -> LOGIN OK");
+        Serial.printf("SERVER -> LOGIN OK\r\n");
       }
       else
       {
         msg = "Wrong username or password!";
-        Serial.println("SERVER -> LOGIN ERROR");
+        Serial.printf("SERVER -> LOGIN ERROR\r\n");
       }    
     }
 
     /* Show Login page */
     WServer.send(200, "text/html", s.Server_GetLoginPage(msg));
   }
+}
+
+
+/* 
+ *  handleUpdate()
+ *    - This functions handles the Server's requests related to the update website
+ */
+void handleUpdate()
+{
+   ota.Update_Manager_Init();
 }
 
 /* ==================================================================== */
@@ -150,6 +165,7 @@ void Server_Manager::Server_Init()
   /* Connect the callbacks */
   WServer.on("/", handleControlData);
   WServer.on("/login", handleLogin);
+  WServer.on("/update", handleUpdate);
 
   /* List of headers to be recorded */
   const char *headerkeys[] = {"User-Agent","Cookie"};
@@ -159,10 +175,10 @@ void Server_Manager::Server_Init()
   WServer.collectHeaders(headerkeys, headerkeyssize);
   WServer.begin();
   
-  Serial.println("SERVER -> Started");
+  Serial.printf("SERVER -> Started\r\n");
 
-  Serial.printf("SERVER -> USERNAME: %s\n", user_username.c_str());
-  Serial.printf("SERVER -> PASSWORD: %s\n", user_password.c_str());
+  Serial.printf("SERVER -> USERNAME: %s\r\n", user_username.c_str());
+  Serial.printf("SERVER -> PASSWORD: %s\r\n", user_password.c_str());
 }
 
 
@@ -195,7 +211,7 @@ bool Server_Manager::Server_IsAuthentified()
     }
     else
     {
-      Serial.println("SERVER -> Authentication Failed");
+      Serial.printf("SERVER -> Authentication Failed\r\n");
     }
   }
   return success_status;
@@ -208,13 +224,11 @@ bool Server_Manager::Server_IsAuthentified()
  */
 void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
 {
-  Serial.print("GPIO -> "); 
-  Serial.print(GpioPin[gpio_id]); 
-  Serial.printf(": "); 
+  Serial.printf("GPIO -> %d: ", GpioPin[gpio_id]); 
    
   if(gpio_state == "1") 
   {
-    Serial.printf("ON\n");
+    Serial.printf("ON\r\n");
     digitalWrite(GpioPin[gpio_id], HIGH);
 
     /* Change span's value */
@@ -224,7 +238,7 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
   
   else if(gpio_state == "0")
   {
-    Serial.printf("OFF\n");
+    Serial.printf("OFF\r\n");
     digitalWrite(GpioPin[gpio_id], LOW);
 
     /* Change span's value */
@@ -233,7 +247,7 @@ void Server_Manager::Server_UpdateGPIO(Gpio_ID_T gpio_id, String gpio_state)
   } 
   else 
   {
-    Serial.println("GPIO -> Unknown request");
+    Serial.printf("GPIO -> Unknown request\r\n");
   }  
 }
 
@@ -271,6 +285,7 @@ String Server_Manager::Server_GetControlPage()
   webpage +=                "<h1>";
   webpage +=                  "iBeacon! <small>Smart home solutions</small>";
   webpage +=                   "<a href=\'/login?DISCONNECT=YES\' class='btn' type='button'>LogOut</a>";
+  webpage +=                   "<a href=\'/update' class='btn' type='button'>Update</a>";
   webpage +=                "</h1>";
   webpage +=             "</div>";
   webpage +=          "</div>";

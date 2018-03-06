@@ -151,24 +151,24 @@ bool Nvm_Manager::Nvm_CredentialsWrite(uint16_t start_addr, const char *ssid, co
         }
 
         EEPROM.end();
-        Serial.println("EEPROM -> Write OK");
+        Serial.printf("EEPROM -> Write OK\r\n");
       }
       else
       {
         success_status = false;
-        Serial.println("EEPROM -> WRITE ERROR: PASS Unicode OOR");
+        Serial.printf("EEPROM -> WRITE ERROR: PASS Unicode OOR\r\n");
       }
     }
     else
     {
       success_status = false;
-      Serial.println("EEPROM -> WRITE ERROR: SSID Unicode OOR");
+      Serial.printf("EEPROM -> WRITE ERROR: SSID Unicode OOR\r\n");
     }
   }
   else
   {
     success_status = false;
-    Serial.println("EEPROM -> Write ERROR");
+    Serial.printf("EEPROM -> Write ERROR\r\n");
   }
   return success_status;
 }
@@ -194,14 +194,14 @@ void Nvm_Manager::Nvm_CredentialsRead(uint16_t start_addr, String &ssid_buf, Str
  */
 void Nvm_Manager::NvM_ReadRawData()
 {
-  Serial.println("EEPROM -> Read raw data START");
+  Serial.printf("EEPROM -> Read raw data START\r\n");
   
   for(uint16_t cnt = 0; cnt < EEPROM_ALLOCATED_SIZE_BYTE; cnt++)
   {
-    Serial.println((char)EEPROM.read(cnt));
+    Serial.printf("%c\r\n",(char)EEPROM.read(cnt));
   }
 
-  Serial.println("EEPROM -> Read raw data END");
+  Serial.printf("EEPROM -> Read raw data END\r\n");
 }
 
 /* EOF */

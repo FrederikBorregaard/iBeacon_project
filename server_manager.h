@@ -13,6 +13,7 @@
 #include "gpio_manager.h"
 #include "snsr_manager.h"
 #include "nvm_manager.h"
+#include "update_manager.h"
 
 /* ==================================================================== */
 /* ============================ typedefs ============================== */

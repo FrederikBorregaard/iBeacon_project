@@ -55,11 +55,11 @@ void WiFi_Manager::WiFi_Connect()
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
 
-  Serial.printf("WIFI -> SSID: %s\n", ap_ssid.c_str());
-  Serial.printf("WIFI -> PASSWORD: %s\n", ap_pass.c_str());
+  Serial.printf("WIFI -> SSID: %s\r\n", ap_ssid.c_str());
+  Serial.printf("WIFI -> PASSWORD: %s\r\n", ap_pass.c_str());
   
   WiFi.begin(ap_ssid.c_str(), ap_pass.c_str());
-  Serial.println("WIFI -> Connecting");
+  Serial.printf("WIFI -> Connecting\r\n");
 
   WiFi.setAutoReconnect(true);
  
@@ -77,20 +77,37 @@ void WiFi_Manager::WiFi_Connect()
   if(WIFI_IS_DISCONNECTED())
   {
     /* Connecting broken due to timeout occurred */
-    Serial.println("WIFI -> Connection timeout");
+    Serial.printf("WIFI -> Connection timeout\r\n");
   }
   else
   {
     /* WiFi is connected */
-    Serial.println("WIFI -> Connected");
-  
-    /* No timeout -> WiFi.status() == WL_CONNECTED */
-    Serial.printf("WIFI -> IP address: ");
-    Serial.println(WiFi.localIP());
-
-    /* Start server */
-    server.Server_Init();
+    Serial.printf("WIFI -> Connected\r\n");
+    WiFi_Restore();
   }
+}
+
+
+/*
+ * WiFi restorenect function
+ *  - This function starts Server
+ *  - This function should be called when WiFi connection is established
+ */
+void WiFi_Manager::WiFi_Restore()
+{
+  /* No timeout -> WiFi.status() == WL_CONNECTED */
+  char buf[16];
+
+  /* Get IP address */
+  IPAddress ip = WiFi.localIP();
+  
+  /* Convert ip addres to char* and store it in the 'buf' */
+  sprintf(buf, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+  
+  printf("WIFI -> IP address: %s\r\n\r\n", buf);
+  
+  /* Start server */
+  server.Server_Init();
 }
 
 
@@ -112,7 +129,7 @@ void WiFi_Manager::WiFi_establish_connection_timeout_event()
  */
 void WiFi_Manager::WiFi_reconnect_failed_timeout_event()
 {
-  Serial.println("WIFI -> Reconnect failed: RESET");
+  Serial.printf("WIFI -> Reconnect failed: RESET\r\n");
   
   WiFi.disconnect();
   ESP.restart();

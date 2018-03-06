@@ -27,7 +27,9 @@
  *      - Light Sensor using ADC
  *      - Measured values
  *      
- *    Configurable parameters:
+ *    - Implemented OTA (Over The Air) Update
+ *      
+ *    - Configurable parameters:
  *      - Serial Baud Rate: 115200
  *      - Establishing connection timeout: 16000ms
  *      - Trying reconnect timeout: 20000ms
@@ -44,6 +46,7 @@
 #include "tmr_config.h"
 #include "server_manager.h"
 #include "snsr_manager.h"
+#include "update_manager.h"
 
 /* ==================================================================== */
 /* ======================== global variables ========================== */
@@ -78,7 +81,12 @@ inline void new_measure_timeout_wrapper();
  */
 void setup()
 {  
-  Serial.println("REBOOT -> OK");
+  Serial.printf("\r\n _)  __ )                                   \r\n");
+  Serial.printf("  |  __ \\    _ \\   _` |   __|   _ \\   __ \\  \r\n");
+  Serial.printf("  |  |   |   __/  (   |  (     (   |  |   |\r\n");
+  Serial.printf(" _| ____/  \\___| \\__,_| \\___| \\___/  _|  _| \r\n");
+  
+  Serial.printf("\r\nREBOOT -> OK\r\n");
   
   eeprom.Nvm_Init();
   gpio.Gpio_Init();
@@ -92,7 +100,7 @@ void setup()
   Start_est_connection_tmr(TMR_ESTABLISH_CONNECTION_TIMEOUT_MS);
   
   wifi.WiFi_Connect();
-  Serial.println("WIFI -> Setup complete");
+  Serial.printf("WIFI -> Setup complete\r\n");
 }
 
 
@@ -110,7 +118,7 @@ void loop()
         *   -> WiFi status is NOT connected
         *   -> connection lost flag is false - set it !
         */
-      Serial.println("WIFI -> Connection ERROR");
+      Serial.printf("WIFI -> Connection ERROR\r\n");
 
       /* Start "try reconnect" timer */
       Start_reconnect_tmr(TMR_RECONNECT_TIMEOUT_MS);
@@ -125,17 +133,20 @@ void loop()
         *   -> WiFi status is connected
         *   -> connection lost flag is true - clear it !
         */
-      Serial.println("WIFI -> Connected after error");
-      Serial.println("WIFI -> IP address: ");
-      Serial.println(WiFi.localIP());
+      Serial.printf("WIFI -> Connected after error\r\n");
+      
+      /* Restore Server */
+      wifi.WiFi_Restore();
       
       /* Disable and reset "try reconnect" timer */
       Stop_reconnect_tmr();
-      wifi.WiFi_clear_connection_lost_flag();
+      wifi.WiFi_clear_connection_lost_flag();      
     }
+    
     /* Handle server requests */
     server.Server_HandleClient();
   }
+  
   serial_e.Serial_RxEvent();
 }
 
